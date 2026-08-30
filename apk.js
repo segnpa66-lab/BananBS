@@ -1,31 +1,50 @@
-var __BANAN_APK_ALLOWLIST=["9932fe7113eb9b15af55444bdcdd93bff3ab4540c02add81b297a5e7ed1810cf"];if(typeof globalThis!=="undefined")globalThis.__BANAN_APK_ALLOWLIST=__BANAN_APK_ALLOWLIST;
-/*__BANAN_MENU_CONFIG__
-TAB|combat|COMBAT
-ITEM|combat|aimbot|Aimbot|toggle|0
-ITEM|combat|autododge|Auto Dodge|toggle|0
-ITEM|combat|killaura|Kill Aura|toggle|0
-ITEM|combat|holdshoot|Hold Shoot|toggle|0
-ITEM|combat|speedhack|Speedhack|toggle|0
-TAB|visual|VISUAL
-ITEM|visual|esp|ESP|toggle|0
-ITEM|visual|camera|Camera|toggle|0
-ITEM|visual|gradient|Gradient|toggle|0
-ITEM|visual|spinner|Spinner|toggle|0
-TAB|social|SOCIAL
-ITEM|social|brawltv|BrawlTV|toggle|0
-ITEM|social|spec|Spectators|toggle|0
-ITEM|social|chatspam|Chat Spam|toggle|0
-ITEM|social|spray|Spam Spray|toggle|0
-ITEM|social|pin|Empty Pin|toggle|0
-TAB|performance|PERFORMANCE
-ITEM|performance|fps|FPS|toggle|0
-ITEM|performance|fpsunlock|FPS Unlock|toggle|0
-TAB|settings|SETTINGS
-SETTING|settings|theme|Theme|select|dark|dark,light
-SETTING|settings|accent|Accent|select|violet|violet,blue,green,red
-SETTING|settings|scale|UI Scale|select|100|80,90,100,110,120
-__BANAN_MENU_CONFIG__*/
-(() => {
+// ╔══════════════════════════════════════════════════════════════════╗
+// ║         BANAN BS — apk.js  (Dynamic Feature Script)             ║
+// ║  Edit this file on your server — menu updates on next launch    ║
+// ╚══════════════════════════════════════════════════════════════════╝
+//
+// HOW TO ADD A NEW FEATURE:
+//  1. Add entry to MENU_CONFIG below (key, label, tab, desc)
+//  2. Implement the feature function(s) below in FEATURES section
+//  3. Upload to your server — no DEX recompile needed!
+//
+// TABS: "Combat"  "Visual"  "Utility"
+
+var __BANAN_APK_ALLOWLIST = ["9932fe7113eb9b15af55444bdcdd93bff3ab4540c02add81b297a5e7ed1810cf"];
+if (typeof globalThis !== "undefined") globalThis.__BANAN_APK_ALLOWLIST = __BANAN_APK_ALLOWLIST;
+
+// ══════════════════════════════════════════════════════════════════
+//  MENU CONFIG  ──  Modify freely. Array order = menu button order
+// ══════════════════════════════════════════════════════════════════
+var MENU_CONFIG = [
+  { key: "aimbot",    label: "Aimbot",       tab: "Combat"  },
+  { key: "autododge", label: "Auto Dodge",   tab: "Combat"  },
+  { key: "killaura",  label: "Kill Aura",    tab: "Combat"  },
+  { key: "holdshoot", label: "Hold Shoot",   tab: "Combat"  },
+  { key: "speedhack", label: "Speedhack",    tab: "Combat"  },
+  { key: "spinner",   label: "Spinner",      tab: "Combat"  },
+  { key: "esp",       label: "ESP",          tab: "Visual"  },
+  { key: "camera",    label: "Camera",       tab: "Visual"  },
+  { key: "fps",       label: "FPS Counter",  tab: "Visual"  },
+  { key: "fpsunlock", label: "FPS Unlock",   tab: "Visual"  },
+  { key: "gradient",  label: "Gradient",     tab: "Visual"  },
+  { key: "spray",     label: "Spam Spray",   tab: "Utility" },
+  { key: "pin",       label: "Empty Pin",    tab: "Utility" },
+  { key: "chatspam",  label: "Chat Spam",    tab: "Utility" },
+  { key: "brawltv",   label: "BrawlTV",      tab: "Utility" },
+  { key: "spec",      label: "Spectators",   tab: "Utility" },
+];
+
+// Write menu config to disk for Android menu to read
+(function() {
+  try {
+    var dir = "/data/data/com.supercell.brawlstars/files/banan/";
+    var f = new File(dir + "menu.json", "w");
+    f.write(JSON.stringify({ features: MENU_CONFIG, version: 2 }));
+    f.close();
+  } catch (_) {}
+})();
+
   // ../pc/src/agent/src/core/libs.js
   var _base = null;
   function mappedModule(name) {
