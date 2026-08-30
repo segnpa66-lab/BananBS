@@ -1,4 +1,30 @@
 var __BANAN_APK_ALLOWLIST=["9932fe7113eb9b15af55444bdcdd93bff3ab4540c02add81b297a5e7ed1810cf"];if(typeof globalThis!=="undefined")globalThis.__BANAN_APK_ALLOWLIST=__BANAN_APK_ALLOWLIST;
+/*__BANAN_MENU_CONFIG__
+TAB|combat|COMBAT
+ITEM|combat|aimbot|Aimbot|toggle|0
+ITEM|combat|autododge|Auto Dodge|toggle|0
+ITEM|combat|killaura|Kill Aura|toggle|0
+ITEM|combat|holdshoot|Hold Shoot|toggle|0
+ITEM|combat|speedhack|Speedhack|toggle|0
+TAB|visual|VISUAL
+ITEM|visual|esp|ESP|toggle|0
+ITEM|visual|camera|Camera|toggle|0
+ITEM|visual|gradient|Gradient|toggle|0
+ITEM|visual|spinner|Spinner|toggle|0
+TAB|social|SOCIAL
+ITEM|social|brawltv|BrawlTV|toggle|0
+ITEM|social|spec|Spectators|toggle|0
+ITEM|social|chatspam|Chat Spam|toggle|0
+ITEM|social|spray|Spam Spray|toggle|0
+ITEM|social|pin|Empty Pin|toggle|0
+TAB|performance|PERFORMANCE
+ITEM|performance|fps|FPS|toggle|0
+ITEM|performance|fpsunlock|FPS Unlock|toggle|0
+TAB|settings|SETTINGS
+SETTING|settings|theme|Theme|select|dark|dark,light
+SETTING|settings|accent|Accent|select|violet|violet,blue,green,red
+SETTING|settings|scale|UI Scale|select|100|80,90,100,110,120
+__BANAN_MENU_CONFIG__*/
 (() => {
   // ../pc/src/agent/src/core/libs.js
   var _base = null;
