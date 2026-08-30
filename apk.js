@@ -6584,18 +6584,7 @@ var __BANAN_APK_ALLOWLIST=["9932fe7113eb9b15af55444bdcdd93bff3ab4540c02add81b297
     brawltv: ["camera"],
     spec: ["camera"]
   };
-  var TALE_COMPAT_ALIASES = Object.freeze({
-    visualspectators: "spec",
-    spectateasbrawltv: "brawltv",
-    emptypin: "pin",
-    randomsprayspam: "spray",
-    autospinner: "spinner"
-  });
-  function normalizeFeature(feature) {
-    const key = String(feature || "").trim().toLowerCase();
-    return TALE_COMPAT_ALIASES[key] || key;
-  }
-  var ALLOWED_FEATURES = new Set([...APK_FEATURE_KEYS, ...Object.keys(TALE_COMPAT_ALIASES)]);
+  var ALLOWED_FEATURES = APK_FEATURE_KEYS;
   var nativeBase = null;
   var battleHookInstalled = false;
   var basePromise = null;
@@ -6603,8 +6592,7 @@ var __BANAN_APK_ALLOWLIST=["9932fe7113eb9b15af55444bdcdd93bff3ab4540c02add81b297
   var lastGradientName = "";
   var initializedFeatures = /* @__PURE__ */ new Set();
   function isFeatureEnabled(feature) {
-    const normalized = normalizeFeature(feature);
-    return !!state[normalized];
+    return !!state[feature];
   }
   function apkLog(message) {
     try {
@@ -6724,29 +6712,28 @@ var __BANAN_APK_ALLOWLIST=["9932fe7113eb9b15af55444bdcdd93bff3ab4540c02add81b297
     });
   }
   function toggleFeature(feature) {
-    const normalized = normalizeFeature(feature);
-    if (!state.hasOwnProperty(normalized)) return false;
-    const enabled = !state[normalized];
-    if (enabled && normalized === "brawltv") setState("spec", false);
-    if (enabled && normalized === "spec") setState("brawltv", false);
-    setState(normalized, enabled);
-    if (enabled) activateFeature(normalized);
-    if (!enabled && normalized === "gradient") applyGradientAll();
+    if (!ALLOWED_FEATURES.has(feature)) return false;
+    const enabled = !state[feature];
+    if (enabled && feature === "brawltv") setState("spec", false);
+    if (enabled && feature === "spec") setState("brawltv", false);
+    setState(feature, enabled);
+    if (enabled) activateFeature(feature);
+    if (!enabled && feature === "gradient") applyGradientAll();
     if (!enabled) {
-      if (normalized === "aimbot") resetAimbot();
-      if (normalized === "autododge") resetAutododge();
-      if (normalized === "spinner") resetSpinner();
-      if (normalized === "esp") resetESP();
-      if (normalized === "camera") resetCamera();
-      if (normalized === "killaura") resetKillaura();
-      if (normalized === "spray") resetSpray();
-      if (normalized === "pin") resetPin();
-      if (normalized === "speedhack") resetSpeedhack();
-      if (normalized === "holdshoot") resetHoldShoot();
-      if (normalized === "fps") resetFps();
-      if (normalized === "fpsunlock") resetFpsUnlock();
-      if (normalized === "chatspam") stopChatSpam();
-      if (normalized === "brawltv" || normalized === "spec") resetSpectator();
+      if (feature === "aimbot") resetAimbot();
+      if (feature === "autododge") resetAutododge();
+      if (feature === "spinner") resetSpinner();
+      if (feature === "esp") resetESP();
+      if (feature === "camera") resetCamera();
+      if (feature === "killaura") resetKillaura();
+      if (feature === "spray") resetSpray();
+      if (feature === "pin") resetPin();
+      if (feature === "speedhack") resetSpeedhack();
+      if (feature === "holdshoot") resetHoldShoot();
+      if (feature === "fps") resetFps();
+      if (feature === "fpsunlock") resetFpsUnlock();
+      if (feature === "chatspam") stopChatSpam();
+      if (feature === "brawltv" || feature === "spec") resetSpectator();
     }
     return enabled;
   }
