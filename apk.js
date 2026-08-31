@@ -700,25 +700,7 @@ var __BANAN_APK_ALLOWLIST=["9932fe7113eb9b15af55444bdcdd93bff3ab4540c02add81b297
     "fpsunlock",
     "gradient",
     "holdshoot",
-    "speedhack",
-    "xrayautoshoot",
-    "autocharge",
-    "showenememyammo",
-    "chromaticname",
-    "hideultiaiming",
-    "seeselectedbrawlers",
-    "randomsprayspam",
-    "removeblackborders",
-    "autoplayagain",
-    "antiautoshoot",
-    "antiautosuper",
-    "emptypin2",
-    "antiafk",
-    "antiafkmod",
-    "willow",
-    "lola",
-    "antishoot",
-    "antispam"
+    "speedhack"
   ];
   var FLAG_OF = {};
   var state = {};
@@ -735,11 +717,6 @@ var __BANAN_APK_ALLOWLIST=["9932fe7113eb9b15af55444bdcdd93bff3ab4540c02add81b297
   var FLAG_PIN = FLAG_OF.pin;
   var FLAG_HOLDSHOOT = FLAG_OF.holdshoot;
   var FLAG_SPEEDHACK = FLAG_OF.speedhack;
-  var FLAG_XRAY = FLAG_OF.xrayautoshoot;
-  var FLAG_AUTOCHARGE = FLAG_OF.autocharge;
-  var FLAG_WILLOW = FLAG_OF.willow;
-  var FLAG_LOLA = FLAG_OF.lola;
-  var FLAG_ANTIAFK = FLAG_OF.antiafkmod;
   var _flags = 0;
   function setState(feature, value) {
     if (!(feature in state)) return;
@@ -6383,401 +6360,11 @@ var __BANAN_APK_ALLOWLIST=["9932fe7113eb9b15af55444bdcdd93bff3ab4540c02add81b297
     Object.freeze({
       key: "speedhack",
       label: "Speedhack"
-    }),
-    Object.freeze({ key: "xrayautoshoot",      label: "X-Ray Autoshoot" }),
-    Object.freeze({ key: "autocharge",          label: "Auto Charge" }),
-    Object.freeze({ key: "showenememyammo",     label: "Show Enemy Ammo" }),
-    Object.freeze({ key: "chromaticname",       label: "Chromatic Name" }),
-    Object.freeze({ key: "hideultiaiming",      label: "Hide Ulti Aiming" }),
-    Object.freeze({ key: "seeselectedbrawlers", label: "See Selected Brawlers" }),
-    Object.freeze({ key: "randomsprayspam",     label: "Random Spray Spam" }),
-    Object.freeze({ key: "removeblackborders",  label: "Remove Black Borders" }),
-    Object.freeze({ key: "autoplayagain",       label: "Auto Play Again" }),
-    Object.freeze({ key: "antiautoshoot",       label: "Anti Autoshoot" }),
-    Object.freeze({ key: "antiautosuper",       label: "Anti Auto Super" }),
-    Object.freeze({ key: "antiafkmod",          label: "Anti AFK" }),
-    Object.freeze({ key: "willow",              label: "Willow Mod" }),
-    Object.freeze({ key: "lola",               label: "Lola Mod" })
+    })
   ]);
   var APK_FEATURE_KEYS = new Set(APK_FEATURES.map(({
     key
   }) => key));
-
-
-  // ─── TALE V7 PORTED FEATURES ─────────────────────────────────────────────────
-
-  // --- X-Ray Autoshoot (Kill Aura target lock from tale v7) ---
-  var _xraySelectedId = null;
-  var _xrayMode = 0;
-  var _xrayTargetSet = false;
-  var _xrayAddInputIC = null;
-  var _xrayGameStartIC = null;
-  var _xrayIsDuels = false;
-
-  function setupXrayAutoshoot(base2) {
-    if (_xrayAddInputIC) return;
-    // Hook ClientInputManager.addInput to lock onto target
-    _xrayAddInputIC = Interceptor.attach(base2.add(offsets.ClientInputManager_addInput), {
-      onEnter(args) {
-        if (!state.xrayautoshoot) return;
-        const input = args[1];
-        try {
-          if (!input || input.isNull()) return;
-          const inputType = input.add(4).readInt();
-          const isAuto = input.add(20).readU8();
-          // Only intercept shoot inputs (type=1) with autoshoot flag
-          if (inputType !== 1 || !isAuto) return;
-          const targetId = input.add(16).readInt();
-          if (targetId >= 1000000 && _xraySelectedId !== targetId) {
-            _xraySelectedId = targetId;
-          }
-          if (_xraySelectedId !== null) {
-            input.add(16).writeInt(_xraySelectedId);
-          }
-        } catch (_) {}
-      }
-    });
-    // Reset on battle end
-    _xrayGameStartIC = Interceptor.attach(base2.add(offsets.LogicBattleModeClient_update), {
-      onEnter(args) {
-        if (!args[0] || args[0].isNull()) {
-          _xraySelectedId = null;
-          _xrayTargetSet = false;
-        }
-      }
-    });
-    logInfo("xray autoshoot setup done");
-  }
-
-  function resetXrayAutoshoot() {
-    _xraySelectedId = null;
-    _xrayTargetSet = false;
-    _xrayMode = 0;
-  }
-
-  // --- Auto Charge (Janet/Hank/Angelo range charge to max) ---
-  var _autoChargeInterval = null;
-  var _autoChargeIC = null;
-
-  function setupAutoCharge(base2) {
-    if (_autoChargeInterval) return;
-    _autoChargeInterval = setInterval(() => {
-      if (!state.autocharge) return;
-      try {
-        const fns = getFunctions();
-        if (!fns || !fns.BattleMode_getInstance) return;
-        const bm = fns.BattleMode_getInstance(ptr(0));
-        if (!bm || bm.isNull() || bm.toInt32() === 0) return;
-        const cim = bm.add(offsets.BattleMode_clientInputManager).readPointer();
-        if (!cim || cim.isNull()) return;
-        const ci = Memory.alloc(64);
-        // type 13 = charge input, value 37 = full charge
-        fns.ClientInput_constructor_int(ci, 13);
-        ci.add(52).writeU8(37);
-        fns.ClientInputManager_addInput(cim, ci);
-      } catch (_) {}
-    }, 160);
-    logInfo("auto charge setup done");
-  }
-
-  function resetAutoCharge() {
-    if (_autoChargeInterval) {
-      clearInterval(_autoChargeInterval);
-      _autoChargeInterval = null;
-    }
-  }
-
-  // --- Show Enemy Ammo ---
-  var _showEnemyAmmoReplaced = false;
-
-  function setupShowEnemyAmmo(base2) {
-    if (_showEnemyAmmoReplaced) return;
-    const fns = getFunctions();
-    if (!fns || !fns.Character__updateHealthBar) return;
-    const origFn = new NativeFunction(base2.add(offsets.Character__updateHealthBar), "void", ["pointer", "float"]);
-    Interceptor.replace(base2.add(offsets.Character__updateHealthBar), new NativeCallback(function(t, e) {
-      origFn(t, e);
-      if (!state.showenememyammo) return;
-      try {
-        const ammoBar = t.add(2568).readPointer();
-        if (!ammoBar || ammoBar.isNull()) return;
-        ammoBar.add(8).writeU8(1);
-      } catch (_) {}
-    }, "void", ["pointer", "float"]));
-    _showEnemyAmmoReplaced = true;
-    logInfo("show enemy ammo setup done");
-  }
-
-  // --- Chromatic Name (bypass brawl pass check) ---
-  var _chromaticNameIC = null;
-
-  function setupChromaticName(base2) {
-    if (_chromaticNameIC) return;
-    // The chromatic name feature patches the gradient system — 
-    // reuse the existing gradient feature when enabled
-    logInfo("chromatic name setup done");
-  }
-
-  // --- Hide Ulti Aiming ---
-  var _hideUltiIC = null;
-
-  function setupHideUltiAiming(base2) {
-    if (_hideUltiIC) return;
-    _hideUltiIC = Interceptor.attach(base2.add(offsets.ClientInput_constructor_int), {
-      onEnter(args) {
-        if (!state.hideultiaiming) return;
-        try {
-          // input type 5 = super aim input — zero it out so server doesn't see it
-          if (args[1] && args[1].toInt32() === 5) {
-            args[1] = ptr(0);
-          }
-        } catch (_) {}
-      }
-    });
-    logInfo("hide ulti aiming setup done");
-  }
-
-  function resetHideUltiAiming() {}
-
-  // --- See Selected Brawlers (see enemy brawlers in lobby) ---
-  var _seeSelectedIC = null;
-
-  function setupSeeSelectedBrawlers(base2) {
-    if (_seeSelectedIC) return;
-    if (!offsets.TeamMemberItem__setMember) return;
-    _seeSelectedIC = Interceptor.attach(base2.add(offsets.TeamMemberItem__setMember), {
-      onEnter(args) {
-        if (!state.seeselectedbrawlers) return;
-        try {
-          args[6] = ptr(1);
-        } catch (_) {}
-      }
-    });
-    logInfo("see selected brawlers setup done");
-  }
-
-  // --- Random Spray Spam ---
-  var _randomSprayInterval = null;
-  var _sprayAngle = 0;
-
-  function setupRandomSpraySpam(base2) {
-    if (_randomSprayInterval) return;
-    _randomSprayInterval = setInterval(() => {
-      if (!state.randomsprayspam) return;
-      try {
-        const fns = getFunctions();
-        if (!fns || !fns.BattleMode_getInstance) return;
-        const bm = fns.BattleMode_getInstance(ptr(0));
-        if (!bm || bm.isNull() || bm.toInt32() === 0) return;
-        const cim = bm.add(offsets.BattleMode_clientInputManager).readPointer();
-        if (!cim || cim.isNull()) return;
-        const ci = Memory.alloc(64);
-        fns.ClientInput_constructor_int(ci, 15); // type 15 = spray
-        // Random emote (6-10)
-        ci.add(36).writeInt(Math.floor(Math.random() * 5) + 6);
-        _sprayAngle = (_sprayAngle + 30) % 360;
-        ci.add(40).writeInt(_sprayAngle);
-        fns.ClientInputManager_addInput(cim, ci);
-      } catch (_) {}
-    }, 120);
-    logInfo("random spray spam setup done");
-  }
-
-  function resetRandomSpraySpam() {
-    if (_randomSprayInterval) {
-      clearInterval(_randomSprayInterval);
-      _randomSprayInterval = null;
-    }
-  }
-
-  // --- Remove Black Borders ---
-  var _blackBordersIC = null;
-
-  function setupRemoveBlackBorders(base2) {
-    if (_blackBordersIC) return;
-    if (!offsets.BattleScreen__updateCameraParameters) return;
-    _blackBordersIC = Interceptor.attach(base2.add(offsets.BattleScreen__updateCameraParameters), {
-      onEnter(args) {
-        if (!state.removeblackborders) return;
-        try {
-          // Write camera mode 6 = no black bars
-          const bs = args[0];
-          if (!bs || bs.isNull()) return;
-          if (offsets.BattleScreen_cameraMode) {
-            bs.add(offsets.BattleScreen_cameraMode).writeS32(6);
-          }
-        } catch (_) {}
-      }
-    });
-    logInfo("remove black borders setup done");
-  }
-
-  // --- Auto Play Again ---
-  var _autoPlayAgainIC = null;
-
-  function setupAutoPlayAgain(base2) {
-    if (_autoPlayAgainIC) return;
-    if (!offsets.Other_BattleEndScreen_enterAddr) return;
-    _autoPlayAgainIC = Interceptor.attach(base2.add(offsets.Other_BattleEndScreen_enterAddr), {
-      onLeave(retval) {
-        if (!state.autoplayagain) return;
-        try {
-          // Click play again button by re-firing battle entry
-          // The BattleEndScreen enter is called when the screen appears;
-          // simulate a click on the play again button offset
-          setTimeout(() => {
-            try {
-              const fns = getFunctions();
-              if (!fns) return;
-              logInfo("auto play again triggered");
-            } catch (_) {}
-          }, 2500);
-        } catch (_) {}
-      }
-    });
-    logInfo("auto play again setup done");
-  }
-
-  // --- Anti Autoshoot (disable auto fire flag) ---
-  var _antiAutoshootIC = null;
-
-  function setupAntiAutoshoot(base2) {
-    if (_antiAutoshootIC) return;
-    _antiAutoshootIC = Interceptor.attach(base2.add(offsets.ClientInputManager_addInput), {
-      onEnter(args) {
-        if (!state.antiautoshoot) return;
-        try {
-          const input = args[1];
-          if (!input || input.isNull()) return;
-          const inputType = input.add(4).readInt();
-          // type 1 = shoot, zero the auto flag
-          if (inputType === 1) {
-            const autoFlag = input.add(20).readU8();
-            if (autoFlag) input.add(20).writeU8(0);
-          }
-        } catch (_) {}
-      }
-    });
-    logInfo("anti autoshoot setup done");
-  }
-
-  // --- Anti Auto Super ---
-  var _antiAutoSuperIC = null;
-
-  function setupAntiAutoSuper(base2) {
-    if (_antiAutoSuperIC) return;
-    _antiAutoSuperIC = Interceptor.attach(base2.add(offsets.ClientInputManager_addInput), {
-      onEnter(args) {
-        if (!state.antiautosuper) return;
-        try {
-          const input = args[1];
-          if (!input || input.isNull()) return;
-          const inputType = input.add(4).readInt();
-          const autoFlag = input.add(20).readU8();
-          // type 1 = shoot (super uses type 1 with flag), kill auto super
-          if (inputType === 1 && autoFlag) {
-            input.add(20).writeU8(0);
-          }
-        } catch (_) {}
-      }
-    });
-    logInfo("anti auto super setup done");
-  }
-
-  // --- Anti AFK ---
-  var _antiAfkReplaced = false;
-
-  function setupAntiAfk(base2) {
-    if (_antiAfkReplaced) return;
-    if (!offsets.BattleScreen_isAfk) return;
-    const origIsAfk = new NativeFunction(base2.add(offsets.BattleScreen_isAfk), "bool", ["pointer"]);
-    Interceptor.replace(base2.add(offsets.BattleScreen_isAfk), new NativeCallback(function(bs) {
-      if (!state.antiafkmod) return origIsAfk(bs);
-      try {
-        const afkTimer = bs.add(3784).readFloat() | 0;
-        if (afkTimer > 9) {
-          const fns = getFunctions();
-          if (!fns || !fns.BattleMode_getInstance) return 0;
-          const bm = fns.BattleMode_getInstance(ptr(0));
-          if (!bm || bm.isNull()) return 0;
-          const own = fns.LogicBattleModeClient_getOwnCharacter(bm.add(offsets.BattleMode_objectManagerPtr).readPointer());
-          if (!own || own.isNull()) return 0;
-          const x = own.add(48).readInt();
-          const y = own.add(52).readInt();
-          const cim = bm.add(offsets.BattleMode_clientInputManager).readPointer();
-          if (!cim || cim.isNull()) return 0;
-          const ci = Memory.alloc(200);
-          fns.ClientInput_constructor_int(ci, 2);
-          ci.add(8).writeInt(x);
-          ci.add(12).writeInt(y);
-          fns.ClientInputManager_addInput(cim, ci);
-        }
-        return 0;
-      } catch (_) { return origIsAfk(bs); }
-    }, "bool", ["pointer"]));
-    _antiAfkReplaced = true;
-    logInfo("anti afk setup done");
-  }
-
-  // --- Willow Mod (rapid gadget + super spam) ---
-  var _willowInterval = null;
-
-  function setupWillowMod(base2) {
-    if (_willowInterval) return;
-    _willowInterval = setInterval(() => {
-      if (!state.willow) return;
-      try {
-        const fns = getFunctions();
-        if (!fns || !fns.BattleMode_getInstance) return;
-        const bm = fns.BattleMode_getInstance(ptr(0));
-        if (!bm || bm.isNull() || bm.toInt32() === 0) return;
-        const cim = bm.add(offsets.BattleMode_clientInputManager).readPointer();
-        if (!cim || cim.isNull()) return;
-        // Gadget input (type 8)
-        const ci1 = Memory.alloc(64);
-        fns.ClientInput_constructor_int(ci1, 8);
-        fns.ClientInputManager_addInput(cim, ci1);
-        // Super input (type 1)
-        const ci2 = Memory.alloc(64);
-        fns.ClientInput_constructor_int(ci2, 1);
-        fns.ClientInputManager_addInput(cim, ci2);
-      } catch (_) {}
-    }, 60);
-    logInfo("willow mod setup done");
-  }
-
-  function resetWillowMod() {
-    if (_willowInterval) { clearInterval(_willowInterval); _willowInterval = null; }
-  }
-
-  // --- Lola Mod (rapid attack spam) ---
-  var _lolaInterval = null;
-
-  function setupLolaMod(base2) {
-    if (_lolaInterval) return;
-    _lolaInterval = setInterval(() => {
-      if (!state.lola) return;
-      try {
-        const fns = getFunctions();
-        if (!fns || !fns.BattleMode_getInstance) return;
-        const bm = fns.BattleMode_getInstance(ptr(0));
-        if (!bm || bm.isNull() || bm.toInt32() === 0) return;
-        const cim = bm.add(offsets.BattleMode_clientInputManager).readPointer();
-        if (!cim || cim.isNull()) return;
-        // Type 3 = rapid attack command
-        const ci = Memory.alloc(64);
-        fns.ClientInput_constructor_int(ci, 3);
-        fns.ClientInputManager_addInput(cim, ci);
-      } catch (_) {}
-    }, 60);
-    logInfo("lola mod setup done");
-  }
-
-  function resetLolaMod() {
-    if (_lolaInterval) { clearInterval(_lolaInterval); _lolaInterval = null; }
-  }
-
-  // Native menu is implemented by com.banan.bs.MenuOverlay.
 
   // src/integrity.js
   function allowlist() {
@@ -6963,9 +6550,9 @@ var __BANAN_APK_ALLOWLIST=["9932fe7113eb9b15af55444bdcdd93bff3ab4540c02add81b297
   }
 
   // src/index.js
-  var ACTIVE_MASK = FLAG_AIMBOT | FLAG_AUTODODGE | FLAG_ESP | FLAG_SPINNER | FLAG_KILLAURA | FLAG_SPRAY | FLAG_PIN | FLAG_HOLDSHOOT | FLAG_SPEEDHACK | FLAG_XRAY | FLAG_AUTOCHARGE | FLAG_WILLOW | FLAG_LOLA | FLAG_ANTIAFK;
+  var ACTIVE_MASK = FLAG_AIMBOT | FLAG_AUTODODGE | FLAG_ESP | FLAG_SPINNER | FLAG_KILLAURA | FLAG_SPRAY | FLAG_PIN | FLAG_HOLDSHOOT | FLAG_SPEEDHACK;
   var AIM_OR_KILL = FLAG_AIMBOT | FLAG_KILLAURA;
-  var TICK_FEATURES = /* @__PURE__ */ new Set(["aimbot", "autododge", "killaura", "esp", "spray", "pin", "spinner", "holdshoot", "speedhack", "xrayautoshoot", "autocharge", "willow", "lola", "randomsprayspam", "antiafkmod"]);
+  var TICK_FEATURES = /* @__PURE__ */ new Set(["aimbot", "autododge", "killaura", "esp", "spray", "pin", "spinner", "holdshoot", "speedhack"]);
   var FEATURE_SETUP = {
     aimbot: setupAimbot,
     autododge: setupAutododge,
@@ -6982,21 +6569,7 @@ var __BANAN_APK_ALLOWLIST=["9932fe7113eb9b15af55444bdcdd93bff3ab4540c02add81b297
     speedhack: setupSpeedhack,
     chatspam: setupChatSpam,
     fps: setupFps,
-    fpsunlock: setupFpsUnlock,
-    xrayautoshoot: setupXrayAutoshoot,
-    autocharge: setupAutoCharge,
-    showenememyammo: setupShowEnemyAmmo,
-    chromaticname: setupChromaticName,
-    hideultiaiming: setupHideUltiAiming,
-    seeselectedbrawlers: setupSeeSelectedBrawlers,
-    randomsprayspam: setupRandomSpraySpam,
-    removeblackborders: setupRemoveBlackBorders,
-    autoplayagain: setupAutoPlayAgain,
-    antiautoshoot: setupAntiAutoshoot,
-    antiautosuper: setupAntiAutoSuper,
-    antiafkmod: setupAntiAfk,
-    willow: setupWillowMod,
-    lola: setupLolaMod
+    fpsunlock: setupFpsUnlock
   };
   var SETUP_KEYS = {
     brawltv: "spectator",
@@ -7101,7 +6674,6 @@ var __BANAN_APK_ALLOWLIST=["9932fe7113eb9b15af55444bdcdd93bff3ab4540c02add81b297
           maybeRefreshWallCache(bm, now);
           if (flags & AIM_OR_KILL) updateAimbot(now);
           if (flags & FLAG_KILLAURA) updateKillaura(now);
-          if (state.xrayautoshoot && !_xrayAddInputIC) setupXrayAutoshoot(nativeBase);
           if (flags & FLAG_AUTODODGE) updateAutododge();
           if (flags & FLAG_ESP) updateESP();
           if (flags & FLAG_SPRAY) updateSpray(now);
@@ -7162,11 +6734,6 @@ var __BANAN_APK_ALLOWLIST=["9932fe7113eb9b15af55444bdcdd93bff3ab4540c02add81b297
       if (feature === "fpsunlock") resetFpsUnlock();
       if (feature === "chatspam") stopChatSpam();
       if (feature === "brawltv" || feature === "spec") resetSpectator();
-      if (feature === "xrayautoshoot") resetXrayAutoshoot();
-      if (feature === "autocharge") resetAutoCharge();
-      if (feature === "willow") resetWillowMod();
-      if (feature === "lola") resetLolaMod();
-      if (feature === "randomsprayspam") resetRandomSpraySpam();
     }
     return enabled;
   }
@@ -7187,11 +6754,6 @@ var __BANAN_APK_ALLOWLIST=["9932fe7113eb9b15af55444bdcdd93bff3ab4540c02add81b297
     resetFps();
     resetChatSpam();
     resetScannerCache();
-    resetXrayAutoshoot();
-    resetAutoCharge();
-    resetWillowMod();
-    resetLolaMod();
-    resetRandomSpraySpam();
     notifyBattleModeChanged(bm);
   }
   function readBananText(name) {
@@ -7238,7 +6800,6 @@ var __BANAN_APK_ALLOWLIST=["9932fe7113eb9b15af55444bdcdd93bff3ab4540c02add81b297
       watchFlags(toggleFeature, isFeatureEnabled);
       ensureBase().then((base2) => {
         apkLog("libg " + base2 + " arch=" + Process.arch);
-        // UI is owned by the native dex MenuOverlay; do not start the legacy JS menu.
       }).catch((error) => {
         apkLog("libg fail " + error);
       });
