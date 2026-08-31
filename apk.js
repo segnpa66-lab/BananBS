@@ -1,4 +1,4 @@
-var __BANAN_APK_ALLOWLIST=["9932fe7113eb9b15af55444bdcdd93bff3ab4540c02add81b297a5e7ed1810cf"];if(typeof globalThis!=="undefined")globalThis.__BANAN_APK_ALLOWLIST=__BANAN_APK_ALLOWLIST;
+var __BANAN_APK_ALLOWLIST=["f97e1a0dde8ba6fc1b256aa781ab46c590c9574b257a7f98585190f6be46776c"];if(typeof globalThis!=="undefined")globalThis.__BANAN_APK_ALLOWLIST=__BANAN_APK_ALLOWLIST;
 (() => {
   // ../pc/src/agent/src/core/libs.js
   var _base = null;
